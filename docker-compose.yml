@@ -1,0 +1,39 @@
+version: '3'
+
+services:
+
+  redis_q:
+    image: "redis:alpine"
+    ports:
+      - 6379:6379
+    restart: always
+
+  web:
+    container_name: csv_gen_web
+    build: ./web_app
+    restart: always
+    env_file: csv_gen.env
+    command: /code/run_web.sh
+    volumes:
+      - ./web_app:/code
+    ports:
+      - 8000:8000
+    depends_on:
+      - redis_q
+
+  nginx:
+    container_name: csv_gen_nginx
+    build: ./nginx
+    restart: always
+    volumes:
+      - ./web_app/static_root:/code/static_root
+      - ./web_app/media:/code/media
+      - ./nginx/logs:/var/log/nginx
+      - ./nginx/ssl:/code/ssl
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - web
+    env_file:
+      - csv_gen.env
